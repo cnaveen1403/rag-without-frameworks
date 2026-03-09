@@ -1,38 +1,34 @@
-import numpy as np
+import faiss
+import numpy as np 
 
 from app.rag.rag_utils import get_embedding
-
 
 class SimpleVectorStore:
 
     def __init__(self):
-
-        self.vectors = []
         self.texts = []
+        self.index = None
 
     def add_documents(self, docs):
-
+        embeddings = []
         for doc in docs:
-
             embedding = get_embedding(doc)
-
-            self.vectors.append(np.array(embedding))
+            embeddings.append(embedding)
             self.texts.append(doc)
 
-    def search(self, query: str, top_k: int = 2):
+        embeddings = np.array(embeddings).astype("float32")
+        dimensions = embeddings.shape[1]
+        self.index = faiss.IndexFlatL2(dimensions)
+        self.index.add(embeddings)
 
-        query_embedding = np.array(get_embedding(query))
+    def search(self, query:str, top_k: int = 3):
+        query_embedding = get_embedding(query)
+        query_vector = np.array([query_embedding]).astype("float32")
+        distances, indices = self.index.search(query_vector, top_k)
 
-        similarities = []
+        results = []
 
-        for vec in self.vectors:
+        for i in indices[0]:
+            results.append(self.texts[i])
 
-            sim = np.dot(query_embedding, vec) / (
-                np.linalg.norm(query_embedding) * np.linalg.norm(vec)
-            )
-
-            similarities.append(sim)
-
-        top_indices = np.argsort(similarities)[-top_k:]
-
-        return [self.texts[i] for i in top_indices]
+        return results
