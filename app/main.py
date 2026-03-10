@@ -27,7 +27,9 @@ vector_store.add_documents(chunks)
 async def ask_question(req: QueryRequest):
 
     # relevant_chunks = vector_store.search(req.question)
-    candidate_chunks = vector_store.search(req.question, top_k=5)
+    vector_results = vector_store.search(req.question, top_k=5)
+    keyword_results = vector_store.keyword_search(req.question, top_k=3)
+    candidate_chunks = list(set(vector_results + keyword_results))
     relevant_chunks = rerank_chunks(req.question, candidate_chunks)[:3]
 
     context = "\n".join(relevant_chunks)

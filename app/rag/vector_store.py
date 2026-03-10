@@ -51,3 +51,22 @@ class SimpleVectorStore:
             results.append(self.texts[i])
 
         return results
+
+    def keyword_search(self, query, top_k=3):
+        scores = []
+        query_words = query.lower().split()
+
+        for text in self.texts:
+            score = 0
+            for word in query_words:
+                if word in text.lower():
+                    score += 1
+            scores.append(score)
+            
+        top_indices = sorted(
+            range(len(scores)),
+            key=lambda i: scores[i],
+            reverse=True
+        )[:top_k]
+
+        return [self.texts[i] for i in top_indices]
