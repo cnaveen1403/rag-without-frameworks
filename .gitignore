@@ -19,3 +19,6 @@ venv/
 
 # Python cache
 *.egg-info/
+
+faiss_index.bin
+texts.pkl

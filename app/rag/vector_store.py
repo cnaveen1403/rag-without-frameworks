@@ -1,5 +1,7 @@
 import faiss
-import numpy as np 
+import numpy as np
+import os
+import pickle
 
 from app.rag.rag_utils import get_embedding
 
@@ -9,6 +11,16 @@ class SimpleVectorStore:
         self.texts = []
         self.index = None
 
+        self.index_path = "faiss_index.bin"
+        self.texts_path = "texts.pkl"
+
+        if os.path.exists(self.index_path):
+
+            self.index = faiss.read_index(self.index_path)
+
+            with open(self.texts_path, "rb") as f:
+                self.texts = pickle.load(f)
+
     def add_documents(self, docs):
         embeddings = []
         for doc in docs:
@@ -17,11 +29,18 @@ class SimpleVectorStore:
             self.texts.append(doc)
 
         embeddings = np.array(embeddings).astype("float32")
-        dimensions = embeddings.shape[1]
-        self.index = faiss.IndexFlatL2(dimensions)
+        dimension = embeddings.shape[1]
+        if self.index is None:
+            self.index = faiss.IndexFlatL2(dimension)
+
         self.index.add(embeddings)
 
-    def search(self, query:str, top_k: int = 3):
+        faiss.write_index(self.index, self.index_path)
+
+        with open(self.texts_path, "wb") as f:
+            pickle.dump(self.texts, f)
+
+    def search(self, query: str, top_k: int = 3):
         query_embedding = get_embedding(query)
         query_vector = np.array([query_embedding]).astype("float32")
         distances, indices = self.index.search(query_vector, top_k)
