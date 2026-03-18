@@ -5,6 +5,7 @@ from app.rag.rag_utils import chunk_text
 from app.rag.vector_store import SimpleVectorStore
 from app.services.llm_service import ask_local_llm
 from app.rag.reranker import rerank_chunks
+from app.rag.query_rewriter import rewrite_query
 
 app = FastAPI()
 
@@ -27,8 +28,12 @@ vector_store.add_documents(chunks)
 async def ask_question(req: QueryRequest):
 
     # relevant_chunks = vector_store.search(req.question)
-    vector_results = vector_store.search(req.question, top_k=5)
-    keyword_results = vector_store.keyword_search(req.question, top_k=3)
+    rewritten_query = rewrite_query(req.question)
+
+    print("Original Query:", req.question)
+    print("Rewritten Query:", rewritten_query)
+    vector_results = vector_store.search(rewrite_query, top_k=5)
+    keyword_results = vector_store.keyword_search(rewrite_query, top_k=3)
     candidate_chunks = list(set(vector_results + keyword_results))
     relevant_chunks = rerank_chunks(req.question, candidate_chunks)[:3]
 
